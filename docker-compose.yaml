@@ -1,0 +1,18 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    network_mode: 'host'
+  web:
+    build: .
+    command: python manage.py runserver ${HOST_IP}:8000
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+    network_mode: 'host'
