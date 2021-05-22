@@ -2,6 +2,8 @@ from rest_framework import serializers
 
 from src.mysalary import models
 
+DEFAULT_DATETIME_FORMAT = "%m/%d/%Y %H:%M:%S"
+
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
@@ -36,7 +38,14 @@ class ContributionSerializer(serializers.ModelSerializer):
             "years_of_experience",
             "datetime_of_contribution",
             "salary",
+            "job_title",
         ]
+        extra_kwargs = {
+            "datetime_of_contribution": {
+                "input_formats": (DEFAULT_DATETIME_FORMAT,),
+                "format": DEFAULT_DATETIME_FORMAT,
+            }
+        }
 
 
 class ContributionQuerySerializer(serializers.Serializer):
@@ -54,14 +63,3 @@ class CompanyListSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Company
         fields = ["name"]
-
-
-# class SalaryInformationSerializer(serializers.BaseSerializer):
-#     class ContributionsByLevelSerializer(serializers.BaseSerializer):
-
-
-#     min_salary = serializers.FloatField()
-#     max_salary = serializers.FloatField()
-#     median_salary = serializers.FloatField()
-
-#     contributions_by_level = ContributionsByLevelSerializer()
