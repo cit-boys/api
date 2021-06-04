@@ -17,12 +17,6 @@ class LevelSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class CompensationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Compensation
-        fields = "__all__"
-
-
 class ContributionSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source="company.short_name", read_only=True)
     company_id = serializers.PrimaryKeyRelatedField(
@@ -50,10 +44,6 @@ class ContributionQuerySerializer(serializers.Serializer):
     company = serializers.IntegerField(required=False)
     company_name = serializers.CharField(required=False)
     level = serializers.CharField(required=False)
-
-
-class CompensationQuerySerializer(serializers.Serializer):
-    company = serializers.IntegerField(required=False)
 
 
 class CertificateSerializer(serializers.ModelSerializer):

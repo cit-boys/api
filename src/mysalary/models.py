@@ -10,6 +10,9 @@ class Company(models.Model):
     name = models.CharField(max_length=DEFAULT_MAX_LENGTH)
     short_name = models.CharField(max_length=DEFAULT_MAX_LENGTH)
     location = models.CharField(max_length=MEDIUM_TEXT_MAX_LENGTH)
+    description = models.CharField(
+        max_length=MEDIUM_TEXT_MAX_LENGTH, null=True, blank=True
+    )
 
     class Meta:
         verbose_name_plural = "Companies"
@@ -20,22 +23,13 @@ class Company(models.Model):
 
 class Level(models.Model):
     name = models.CharField(max_length=DEFAULT_MAX_LENGTH)
+    order = models.PositiveIntegerField()
 
     # Foreign Keys
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
-    order = models.PositiveIntegerField()
 
     def __str__(self) -> str:
         return f"{self.company.name} / {self.id} / {self.name}"
-
-
-class Compensation(models.Model):
-    salary = models.DecimalField(max_digits=9, decimal_places=2)
-
-    # Foreign Keys
-    company = models.ForeignKey(Company, on_delete=models.CASCADE)
-    level = models.ForeignKey(Level, on_delete=models.CASCADE)
-    salary = models.FloatField()
 
 
 class Contribution(models.Model):
@@ -67,4 +61,6 @@ class Certificate(models.Model):
     certificate_name = models.CharField(max_length=MEDIUM_TEXT_MAX_LENGTH)
 
     # Foreign Keys
-    compensation = models.ForeignKey(Compensation, on_delete=models.CASCADE)
+    contribution = models.ForeignKey(
+        Contribution, on_delete=models.CASCADE, null=True, blank=True
+    )

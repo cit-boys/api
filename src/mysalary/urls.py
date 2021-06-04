@@ -5,10 +5,9 @@ from src.mysalary import views
 
 ROUTER = DefaultRouter()
 
-ROUTER.register("companies", views.CompanyViewSet)
-ROUTER.register("levels", views.LevelViewSet)
-ROUTER.register("compensations", views.CompensationViewSet)
-ROUTER.register("contributions", views.ContributionViewSet)
-ROUTER.register("certificates", views.CeritificateViewSet)
+ROUTER.register("companies", views.CompanyView)
+ROUTER.register("levels", views.LevelView)
+ROUTER.register("contributions", views.ContributionView)
+ROUTER.register("certificates", views.CeritificateView)
 
 urlpatterns = path("", include(ROUTER.urls))
