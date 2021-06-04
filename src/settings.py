@@ -32,7 +32,13 @@ SECRET_KEY = "wttazi(2=w(87)03j8=8f301%hkj7h0_osuu3-r164etl%pcbt"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", HOST_IP]
+ALLOWED_HOSTS = [
+    "localhost",
+    "0.0.0.0",
+    "127.0.0.1",
+    HOST_IP,
+    "ad8a58d8624b.jp.ngrok.io",
+]
 
 
 # Application definition

@@ -4,12 +4,13 @@ from django.contrib import admin
 from django.urls import include, path
 
 from .mysalary.urls import urlpatterns as MYSALARY_URLS
+from .mysalary.views import jobs
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path(
         "api/",
-        include([MYSALARY_URLS]),
+        include([MYSALARY_URLS, path("jobs/", jobs)]),
     ),
 ]
 
