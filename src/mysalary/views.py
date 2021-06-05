@@ -7,7 +7,7 @@ from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 
-from src import mixins, pagination
+from src import pagination
 from src.mysalary import models, serializers
 
 # Create your views here.
@@ -22,7 +22,6 @@ class CompanyView(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        print(headers)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
@@ -118,7 +117,6 @@ class LevelView(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        print(headers)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
@@ -232,7 +230,6 @@ class ContributionView(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        print(headers)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
@@ -304,6 +301,11 @@ class ContributionView(viewsets.GenericViewSet):
         if not serializer.is_valid(raise_exception=True):
             return Response("Query param is invalid")
 
+        try:
+            queryset[0]
+        except IndexError:
+            return Response(status=status.HTTP_200_OK)
+
         values = queryset.values_list("salary", flat=True).order_by("salary")
 
         min = queryset.aggregate(Min("salary"))["salary__min"] or 0.00
@@ -357,12 +359,16 @@ class ContributionView(viewsets.GenericViewSet):
         if not serializer.is_valid(raise_exception=True):
             return Response("Query param is invalid")
 
+        company = (
+            models.Company.objects.get(
+                id=serializer.validated_data.get("company")
+            ).short_name,
+        )
+
         return Response(
             {
                 "level": serializer.validated_data.get("level"),
-                "company": models.Company.objects.get(
-                    id=serializer.validated_data.get("company")
-                ).short_name,
+                "company": company,
                 "salary": queryset.aggregate(Avg("salary"))["salary__avg"] or 0.00,
                 "bonus": queryset.aggregate(Avg("bonus"))["bonus__avg"] or 0.00,
             },
@@ -405,6 +411,12 @@ class ContributionView(viewsets.GenericViewSet):
 
         return Response(finals)
 
+    @action(methods=["GET"], detail=False, url_path="description")
+    def description_company(self, request):
+        queryset = self.get_queryset()
+
+        return Response(queryset[0].company.description, status=status.HTTP_200_OK)
+
 
 class CeritificateView(viewsets.GenericViewSet):
     queryset = models.Certificate.objects
@@ -417,7 +429,6 @@ class CeritificateView(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        print(headers)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
@@ -477,6 +488,113 @@ class CeritificateView(viewsets.GenericViewSet):
         instance.delete()
 
     # other functions
+
+
+class DashboardView(viewsets.GenericViewSet):
+    @action(methods=["GET"], detail=False, url_path="salaryinfo")
+    def salary_info(self, request):
+        # filtered by job_title and company
+
+        queryset = self.get_queryset()
+
+        serializer = serializers.ContributionQuerySerializer(
+            data=self.request.query_params
+        )
+
+        if not serializer.is_valid(raise_exception=True):
+            return Response("Query param is invalid")
+
+        try:
+            queryset[0]
+        except IndexError:
+            return Response(status=status.HTTP_200_OK)
+
+        values = queryset.values_list("salary", flat=True).order_by("salary")
+
+        min = queryset.aggregate(Min("salary"))["salary__min"] or 0.00
+        max = queryset.aggregate(Max("salary"))["salary__max"] or 0.00
+
+        contributions = queryset.count()
+        if contributions % 2 == 1:
+            median = values[contributions // 2]
+        else:
+            mid = contributions // 2
+            median = values[mid + 1] + values[mid - 1]
+
+        info = []
+
+        queryset = (
+            queryset.values("level__name")
+            .annotate(count=Count("level"), salary=Avg("salary"), bonus=Avg("bonus"))
+            .order_by("level__order")
+        )
+
+        for query in queryset:
+            info.append(
+                {
+                    "level": query.get("level__name"),
+                    "salary": query.get("salary"),
+                    "bonus": query.get("bonus"),
+                    "contributions": query.get("count"),
+                }
+            )
+
+        sample = serializers.SampleSerializer(info, many=True)
+
+        return Response(
+            {
+                "min": min,
+                "max": max,
+                "median": median or 0.00,
+                "info": sample.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @api_view(http_method_names=["GET"])
+    def jobs(request):
+        return Response(get_job_titles(), status=status.HTTP_200_OK)
+
+    def get_job_titles():
+        return set(
+            models.Contribution.objects.all().values_list("job_title", flat=True)
+        )
+
+    @action(methods=["GET"], detail=False, url_path="company")
+    def contribution_company(self, request):
+        queryset = self.get_queryset()
+
+        serializer = serializers.ContributionQuerySerializer(
+            data=self.request.query_params
+        )
+
+        values = (
+            queryset.values_list("job_title", flat=True)
+            .order_by("job_title")
+            .distinct()
+        )
+
+        company_id = queryset[0].company_id
+
+        results = {}
+
+        for value in values:
+            temp = models.Contribution.objects.filter(
+                company=company_id, job_title=value
+            )
+            results[value] = temp.values_list("salary", flat=True)
+
+        finals = []
+
+        for result in results:
+            finals.append(
+                {
+                    "job_title": result,
+                    "salaries": results[result],
+                }
+            )
+
+        return Response(finals)
 
 
 @api_view(http_method_names=["GET"])

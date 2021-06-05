@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     # third party apps
     "rest_framework",
     "corsheaders",
+    # "django_extensions",
 ]
 
 MIDDLEWARE = [
